@@ -1,6 +1,31 @@
 #include <cassert>
 #include <iostream>
+#include <cstdlib>
 #include "btree/BTree.h"
+
+// Live-allocation counter (Task 1 option c). Overrides count allocations
+// and frees; after all cleanups the live count must be zero.
+static long live_alloc = 0, live_free = 0;
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winfinite-recursion"
+void* operator new(std::size_t sz)
+{
+    void* p = std::malloc(sz);
+    __sync_fetch_and_add(&live_alloc, 1);
+    return p;
+}
+void operator delete(void* p) noexcept
+{
+    std::free(p);
+    __sync_fetch_and_add(&live_free, 1);
+}
+void operator delete(void* p, std::size_t) noexcept
+{
+    std::free(p);
+    __sync_fetch_and_add(&live_free, 1);
+}
+#pragma GCC diagnostic pop
 
 static int g_pass = 0, g_fail = 0;
 
@@ -133,6 +158,7 @@ static void Delete2LevelTree(BTree<int, 3>* tree)
     // We built it with CreateInternal which allocates on heap; free node by node
     DestroyTree(*tree); // our DestroyTree handles recursive free
     delete tree;
+    TEST(Live_after_2level_destroy, live_alloc == live_free);
 }
 
 static void Delete3LevelTree(BTree<int, 3>* tree)
@@ -141,6 +167,7 @@ static void Delete3LevelTree(BTree<int, 3>* tree)
         return;
     DestroyTree(*tree);
     delete tree;
+    TEST(Live_after_3level_destroy, live_alloc == live_free);
 }
 
 int main()
@@ -198,6 +225,7 @@ int main()
         TEST(Search_single_larger, Search(tree, 35) == false);
 
         DestroyTree(tree);
+        TEST(Live_after_single_leaf_destroy, live_alloc == live_free);
     }
 
     // ----- 2-level tree tests -----
@@ -224,6 +252,10 @@ int main()
         TEST(Search_2level_between_10_20_11, Search(*tree, 11) == false);
         TEST(Search_2level_between_20_25_21, Search(*tree, 21) == false);
         TEST(Search_2level_between_12_15_13, Search(*tree, 13) == false);
+
+        // Boundary: exactly at separator (already covered by 10/20, but explicit)
+        TEST(Search_2level_separator_root_10, Search(*tree, 10) == true);
+        TEST(Search_2level_separator_root_20, Search(*tree, 20) == true);
 
         Delete2LevelTree(tree);
     }
@@ -254,6 +286,10 @@ int main()
         TEST(Search_3level_not_found_21, Search(*tree, 21) == false);
         TEST(Search_3level_not_found_55, Search(*tree, 55) == false);
 
+        // Boundary: smaller than all, larger than all
+        TEST(Search_3level_boundary_small, Search(*tree, 0) == false);
+        TEST(Search_3level_boundary_large, Search(*tree, 99) == false);
+
         Delete3LevelTree(tree);
     }
 
@@ -264,7 +300,9 @@ int main()
         // Should not crash
         DestroyTree(tree);
         TEST(Destroy_twice_safe, tree.root == nullptr); // double-call nulls root
+        TEST(Live_after_empty_destroy, live_alloc == live_free);
         DestroyTree(tree); // second call, root already null
+        TEST(Live_after_double_destroy, live_alloc == live_free);
     }
 
     std::cout << "\n=== Results: " << g_pass << " passed, " << g_fail << " failed ===" << std::endl;
