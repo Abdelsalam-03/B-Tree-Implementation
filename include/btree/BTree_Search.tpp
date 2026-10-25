@@ -1,57 +1,56 @@
 // Person 1: Search and tree initialization
 
 template <typename Type, int Ord>
-void InitTree(BTree<Type, Ord>& tree)
+void InitTree(BTree<Type, Ord> &tree)
 {
     tree.root = nullptr;
 }
 
 template <typename Type, int Ord>
-void DestroyNode(Node<Type, Ord>* node)
+void DestroyNode(Node<Type, Ord> *node)
 {
     if (!node)
         return;
 
     if (!node->is_leaf)
     {
-        InternalNode<Type, Ord>* internal = static_cast<InternalNode<Type, Ord>*>(node);
+        InternalNode<Type, Ord> *internal = static_cast<InternalNode<Type, Ord> *>(node);
         for (int i = 0; i <= internal->num_keys; ++i)
         {
             DestroyNode(internal->child[i]);
         }
     }
-    // For leaf nodes, there are no children to destroy
 
     if (node->is_leaf)
     {
-        delete static_cast<LeafNode<Type, Ord>*>(node);
+        delete static_cast<LeafNode<Type, Ord> *>(node);
     }
     else
     {
-        delete static_cast<InternalNode<Type, Ord>*>(node);
+        delete static_cast<InternalNode<Type, Ord> *>(node);
     }
 }
 
 template <typename Type, int Ord>
-void DestroyTree(BTree<Type, Ord>& tree)
+void DestroyTree(BTree<Type, Ord> &tree)
 {
     DestroyNode(tree.root);
     tree.root = nullptr;
 }
 
 template <typename Type, int Ord>
-LeafNode<Type, Ord>* CreateLeaf()
+LeafNode<Type, Ord> *CreateLeaf()
 {
-    LeafNode<Type, Ord>* node = new LeafNode<Type, Ord>();
+    LeafNode<Type, Ord> *node = new LeafNode<Type, Ord>();
     node->is_leaf = true;
     node->num_keys = 0;
     return node;
 }
 
 template <typename Type, int Ord>
-InternalNode<Type, Ord>* CreateInternal()
+InternalNode<Type, Ord> *CreateInternal()
 {
-    InternalNode<Type, Ord>* node = new InternalNode<Type, Ord>();
+    InternalNode<Type, Ord> *node = new InternalNode<Type, Ord>();
     node->is_leaf = false;
     node->num_keys = 0;
     for (int i = 0; i <= Ord; ++i)
@@ -62,37 +61,33 @@ InternalNode<Type, Ord>* CreateInternal()
 }
 
 template <typename Type, int Ord>
-bool SearchRecursive(Node<Type, Ord>* node, Type key)
+bool SearchRecursive(Node<Type, Ord> *node, Type key)
 {
     if (!node)
         return false;
 
-    // Search keys in current node
     int i = 0;
     while (i < node->num_keys && key > node->key[i])
     {
         ++i;
     }
 
-    // If key found in this node
     if (i < node->num_keys && key == node->key[i])
     {
         return true;
     }
 
-    // If leaf node, key not found
     if (node->is_leaf)
     {
         return false;
     }
 
-    // Recursively search in the appropriate child
-    InternalNode<Type, Ord>* internal = static_cast<InternalNode<Type, Ord>*>(node);
+    InternalNode<Type, Ord> *internal = static_cast<InternalNode<Type, Ord> *>(node);
     return SearchRecursive(internal->child[i], key);
 }
 
 template <typename Type, int Ord>
-bool Search(BTree<Type, Ord>& tree, Type key)
+bool Search(BTree<Type, Ord> &tree, Type key)
 {
     return SearchRecursive(tree.root, key);
 }
