@@ -1,9 +1,62 @@
 // Person 4: Delete from internal and underflow helpers
 
 template <typename Type, int Ord>
-void DeleteFromInternal(BTree<Type, Ord>& tree, InternalNode<Type, Ord>* node, Type key)
+void DeleteFromInternal(BTree<Type, Ord> &tree, InternalNode<Type, Ord> *node, Type key)
 {
-    // TODO (Person 4): Implement DeleteFromInternal - delete key from internal node, replace with predecessor/successor
+    const int MIN_KEYS = Ord / 2;
+    Node<Type, Ord> *current = node;
+
+    while (true)
+    {
+        int index = 0;
+        while (index < current->num_keys &&
+               current->key[index] != key)
+        {
+            ++index;
+        }
+
+        if (current->is_leaf)
+        {
+            DeleteFromLeaf(tree, static_cast<LeafNode<Type, Ord> *>(current), key);
+            return;
+        }
+
+        auto internal = static_cast<InternalNode<Type, Ord> *>(current);
+        auto left = internal->child[index];
+        auto right = internal->child[index + 1];
+
+        bool usePredecessor = left->num_keys > MIN_KEYS;
+
+        if (usePredecessor || right->num_keys > MIN_KEYS)
+        {
+            Node<Type, Ord> *temp = usePredecessor ? left : right;
+
+            while (!temp->is_leaf)
+            {
+                auto parent = static_cast<InternalNode<Type, Ord> *>(temp);
+                int childIndex = usePredecessor ? temp->num_keys : 0;
+                temp = parent->child[childIndex];
+            }
+            
+            int replacingIndex = usePredecessor ? temp->num_keys - 1 : 0;
+            Type replacing = temp->key[replacingIndex];
+
+            Delete(tree, replacing);
+            internal->key[index] = replacing;
+            return;
+        }
+
+        // Merge children into left
+        Merge(tree, internal, key);
+
+        // Shrink the root if the merge affected it
+        if (internal == tree.root && internal->num_keys == 0)
+        {
+            FixUnderflow(tree, internal, key);
+        }
+
+        current = left;
+    }
 }
 
 template <typename Type, int Ord>
