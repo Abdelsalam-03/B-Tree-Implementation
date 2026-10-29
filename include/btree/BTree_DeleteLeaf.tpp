@@ -136,7 +136,7 @@ bool BorrowFromSibling(BTree<Type, Ord> &tree, Node<Type, Ord> *node, Type key)
         {
             target->key[target->num_keys] = parent->key[index];
             parent->key[index] = right->key[0];
-            for (int i = 0; i < right->num_keys - 1; ++)
+            for (int i = 0; i < right->num_keys - 1; i++)
             {
                 right->key[i] = right->key[i + 1];
             }
@@ -145,9 +145,9 @@ bool BorrowFromSibling(BTree<Type, Ord> &tree, Node<Type, Ord> *node, Type key)
                 InternalNode<Type, Ord> *tI = static_cast<InternalNode<Type, Ord> *>(target);
                 InternalNode<Type, Ord> *rI = static_cast<InternalNode<Type, Ord> *>(right);
 
-                tI->child[target->num_keys] = lI->child[0];
+                tI->child[target->num_keys] = rI->child[0];
 
-                for (int i = 0; i < right->num_keys - 1; ++)
+                for (int i = 0; i < right->num_keys - 1; i++)
                 {
                     rI->child[i] = rI->child[i + 1];
                 }
@@ -175,8 +175,8 @@ void Merge(BTree<Type, Ord> &tree, Node<Type, Ord> *node, Type key)
     while (index < node->num_keys && node->key[index] < key)
         ++index;
 
-    Node<Type, Ord> *left = parent[index];
-    Node<Type, Ord> *right = parent[index + 1];
+    Node<Type, Ord> *left = parent->child[index];
+    Node<Type, Ord> *right = parent->child[index + 1];
 
     int leftKeys = left->num_keys;
     int rightKeys = right->num_keys;
