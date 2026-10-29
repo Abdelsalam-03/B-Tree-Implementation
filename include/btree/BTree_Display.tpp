@@ -3,6 +3,12 @@
 template <typename Type, int Ord>
 void DisplayAll(BTree<Type, Ord> &tree)
 {
+    if (tree.root == nullptr)
+    {
+        std::cout << "Empty tree." << std::endl;
+        return;
+    }
+    
     auto traverse = [](auto &&self, Node<Type, Ord> *node) -> void
     {
         if (node->is_leaf)
@@ -28,4 +34,5 @@ void DisplayAll(BTree<Type, Ord> &tree)
     };
 
     traverse(traverse, tree.root);
+    std::cout << std::endl;
 }
