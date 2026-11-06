@@ -21,9 +21,9 @@ void DeleteFromInternal(BTree<Type, Ord> &tree, InternalNode<Type, Ord> *node, T
             return;
         }
 
-        auto internal = static_cast<InternalNode<Type, Ord> *>(current);
-        auto left = internal->child[index];
-        auto right = internal->child[index + 1];
+        InternalNode<Type, Ord> *internal = static_cast<InternalNode<Type, Ord> *>(current);
+        Node<Type, Ord> *left = internal->child[index];
+        Node<Type, Ord> *right = internal->child[index + 1];
 
         bool usePredecessor = left->num_keys > MIN_KEYS;
 
@@ -33,11 +33,11 @@ void DeleteFromInternal(BTree<Type, Ord> &tree, InternalNode<Type, Ord> *node, T
 
             while (!temp->is_leaf)
             {
-                auto parent = static_cast<InternalNode<Type, Ord> *>(temp);
+                InternalNode<Type, Ord> *parent = static_cast<InternalNode<Type, Ord> *>(temp);
                 int childIndex = usePredecessor ? temp->num_keys : 0;
                 temp = parent->child[childIndex];
             }
-            
+
             int replacingIndex = usePredecessor ? temp->num_keys - 1 : 0;
             Type replacing = temp->key[replacingIndex];
 
@@ -78,7 +78,7 @@ void FixUnderflow(BTree<Type, Ord> &tree, Node<Type, Ord> *node, Type key)
         }
         return;
     }
-    
+
     const int MIN_KEYS = Ord / 2;
     if (node->is_leaf)
         return;
@@ -86,22 +86,20 @@ void FixUnderflow(BTree<Type, Ord> &tree, Node<Type, Ord> *node, Type key)
     int index = 0;
     while (index < node->num_keys && key > node->key[index])
         ++index;
-    
+
     InternalNode<Type, Ord> *internal = static_cast<InternalNode<Type, Ord> *>(node);
     if (internal->child[index]->num_keys <= MIN_KEYS)
     {
         bool borrowLeft = index > 0 && internal->child[index - 1]->num_keys > MIN_KEYS;
         bool borrowRight = index < node->num_keys && internal->child[index + 1]->num_keys > MIN_KEYS;
-        
+
         if (borrowLeft || borrowRight)
         {
             BorrowFromSibling(tree, node, key);
             return;
         }
-        
-        Type separator = (index < node->num_keys)
-                             ? node->key[index]
-                             : node->key[index - 1];
+
+        Type separator = (index < node->num_keys) ? node->key[index] : node->key[index - 1];
         Merge(tree, node, separator);
 
         if (node == tree.root && node->num_keys == 0)

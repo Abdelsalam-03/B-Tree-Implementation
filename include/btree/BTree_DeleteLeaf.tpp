@@ -53,7 +53,7 @@ void Delete(BTree<Type, Ord> &tree, Type key)
         while (index < current->num_keys && current->key[index] < key)
             ++index;
 
-        auto internal = static_cast<InternalNode<Type, Ord> *>(current);
+        InternalNode<Type, Ord> * internal = static_cast<InternalNode<Type, Ord> *>(current);
         current = internal->child[index];
     }
 }
